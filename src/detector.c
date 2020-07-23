@@ -163,8 +163,8 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
 #ifdef OPENCV
     //int num_threads = get_num_threads();
     //if(num_threads > 2) args.threads = get_num_threads() - 2;
-    args.threads = 6 * ngpus;   // 3 for - Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
-    //args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores)
+    //args.threads = 6 * ngpus;   // 3 for - Amazon EC2 Tesla V100: p3.2xlarge (8 logical cores) - p3.16xlarge
+    args.threads = 12 * ngpus;    // Ryzen 7 2700X (16 logical cores) - Xeon chip in the beast (16 cores)
     mat_cv* img = NULL;
     float max_img_loss = net.max_chart_loss;
     int number_of_lines = 100;
@@ -312,6 +312,20 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             else fprintf(stderr, "\n Tensor Cores are used.\n");
             fflush(stderr);
         }
+
+        // mod eliott
+        // printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), i*imgs);
+        double step_time = (what_time_is_it_now() - time);
+        printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images\n", get_current_batch(net), loss, avg_loss, get_current_rate(net), step_time, iteration*imgs);
+        FILE *f;
+        if ((f = fopen("loss_log.csv", "a")) == NULL){
+            printf("Error opening file!");
+            exit(1);
+        }
+        fprintf(f, "%ld, %f, %f, %lf, %f\n", get_current_batch(net), loss, avg_loss, step_time, mean_average_precision*100);
+        fclose(f);
+        // end of mod
+        
         printf("\n %d: %f, %f avg loss, %f rate, %lf seconds, %d images, %f hours left\n", iteration, loss, avg_loss, get_current_rate(net), (what_time_is_it_now() - time), iteration*imgs, avg_time);
         fflush(stdout);
 

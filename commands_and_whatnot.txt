@@ -1,0 +1,113 @@
+********************************************************************
+*** Usefull commands and notes about running yolov4 on darknet🕸️ ***
+********************************************************************
+coffee2 -> labels from the tripnet predictions (dist<=10, at least 50 examples)
+coffee3 -> labels from the clusters (tripnet training set)
+coffee4 -> labels from the version 24_200 of tripnet predictions (dist<=25, at least 30 examples)
+coffee4-tiny -> same labels as coffee4, test for mobile applications
+coffee4-custom -> essentially the same as coffee4, with different anchor masks for the [yolo] layers (supposed to be better suited)
+coffee5 -> detection only with yolov4 with original anchors
+
+------------------------------------------------------------------------------------------------------------------
+train
+------------------------------------------------------------------------------------------------------------------
+coffee:
+tsp ./darknet detector train cfg/coffee.data cfg/coffee-yolov3.cfg darknet53.conv.74 -dont_show -map
+
+coffee2:
+tsp ./darknet detector train cfg/coffee2.data cfg/coffee2-yolov3.cfg darknet53.conv.74
+tsp ./darknet detector train cfg/coffee2.data cfg/coffee2-yolov3.cfg backup/coffee2/coffee2-yolov3.backup
+
+coffee3:
+tsp ./darknet detector train cfg/coffee3.data cfg/coffee3-yolov3.cfg darknet53.conv.74
+tsp ./darknet detector train cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3.backup
+tsp ./darknet detector train cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_last.weights -dont_show -map
+tsp ./darknet detector train cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_last.weights -dont_show -map
+
+coffee4:
+tsp ./darknet detector train cfg/coffee4.data cfg/coffee4-yolov3.cfg darknet53.conv.74 -dont_show -map
+tsp ./darknet detector train cfg/coffee4.data cfg/coffee4-yolov3.cfg backup/coffee4/coffee4-yolov3_last.weights -dont_show -map
+
+coffee4-custom:
+tsp ./darknet detector train cfg/coffee4-custom.data cfg/coffee4-yolov3-custom.cfg darknet53.conv.74 -dont_show -map
+tsp ./darknet detector train cfg/coffee4-custom.data cfg/coffee4-yolov3-custom.cfg backup/coffee4-custom/coffee4-yolov3-custom_last.weights -dont_show -map
+
+coffee4-tiny:
+tsp ./darknet detector train cfg/coffee4-tiny.data cfg/coffee4-yolov3-tiny.cfg yolov3-tiny.conv.15 -dont_show -map
+tsp ./darknet detector train cfg/coffee4-tiny.data cfg/coffee4-yolov3-tiny.cfg backup/coffee4-tiny/coffee4-yolov3-tiny_last.weights -dont_show -map
+
+coffee5:
+tsp ./darknet detector train cfg/coffee5.data cfg/coffee5-yolov4.cfg yolov4.conv.137 -dont_show -map
+tsp ./darknet detector train cfg/coffee5.data cfg/coffee5-yolov4.cfg backup/coffee5/coffee5-yolov4_last.weights -dont_show -map
+
+
+------------------------------------------------------------------------------------------------------------------
+run detection
+------------------------------------------------------------------------------------------------------------------
+coffee:
+./darknet detector test cfg/coffee.data cfg/coffee-yolov3-test.cfg backup/coffee/coffee_yolo_600x600.weights test_images/1.jpg -dont_show
+./darknet detector test cfg/coffee.data cfg/coffee-yolov3.cfg backup/coffee/coffee-yolov3_best.weights test_images/1.jpg -dont_show
+
+coffee2:
+./darknet detector test cfg/coffee2.data cfg/coffee2-yolov3.cfg backup/coffee2/coffee2-yolov3_best.weights test_images/1.jpg -dont_show
+
+coffee3:
+./darknet detector test cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_best.weights test_images/1.jpg -dont_show
+
+coffee4:
+./darknet detector test cfg/coffee4.data cfg/coffee4-yolov3.cfg backup/coffee4/coffee4-yolov3_best.weights test_images/1.jpg -dont_show
+
+coffee4-tiny:
+./darknet detector test cfg/coffee4-tiny.data cfg/coffee4-yolov3-tiny.cfg backup/coffee4-tiny/coffee4-yolov3-tiny_best.weights test_images/1.jpg -dont_show
+
+coffee4-custom:
+./darknet detector test cfg/coffee4-custom.data cfg/coffee4-yolov3-custom.cfg backup/coffee4-custom/coffee4-yolov3-custom_best.weights test_images/1.jpg -dont_show
+
+coffee5:
+./darknet detector test cfg/coffee5.data cfg/coffee5-yolov4.cfg backup/coffee5/coffee5-yolov4_best.weights utils_eliott/test_images/1.jpg -dont_show
+
+multiple images:
+./darknet detector test cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_best.weights -dont_show -ext_output -out result.json < data/valid.txt
+./darknet detector test cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_best.weights -dont_show -ext_output < data/valid.txt > result.txt
+
+pseudo-labelling: (generates one text file per image with the yolo format)
+./darknet detector test cfg/coffee3.data cfg/coffee3-yolov3.cfg backup/coffee3/coffee3-yolov3_best.weights -dont_show -save_labels < data/valid.txt
+
+------------------------------------------------------------------------------------------------------------------
+Calculate map
+------------------------------------------------------------------------------------------------------------------
+./darknet detector map cfg/coffee4.data cfg/coffee4-yolov3.cfg backup/coffee4/coffee4-yolov3_best.weights
+./darknet detector map cfg/coffee4-custom.data cfg/coffee4-yolov3-custom.cfg backup/coffee4-custom/coffee4-yolov3-custom_best.weights
+
+------------------------------------------------------------------------------------------------------------------
+generate anchors
+------------------------------------------------------------------------------------------------------------------
+./darknet detector calc_anchors data/all_images.data -num_of_clusters 9 -width 832 -height 832 -show
+
+(9, 416, 416) darknet default: 10,13, 16,30, 33,23, 30,61, 62,45, 59,119, 116,90, 156,198, 373,326
+(9, 608, 608) keras custom: 27,35, 21,55, 46,33, 27,66, 36,49, 35,79, 46,65, 60,49, 57,85
+(9, 608, 608) darknet custom: 13,13, 28,38, 22,60, 49,32, 39,52, 31,74, 63,51, 47,75, 70,91
+(9, 832, 832) darknet custom: 18,18, 39,52, 30,82, 68,44, 53,72, 42,102, 86,70, 65,102, 96,124
+(6, 416, 416) darknet default for tiny yolo: 10,14, 23,27, 37,58, 81,82, 135,169, 344,319
+(6, 608, 608) darknet custom for tiny yolo: 14,14, 33,39, 24,63, 58,42, 41,66, 63,83
+(15, 832, 832) darknet custom for 5l yolo: 18,17, 34,49, 56,41, 29,80, 111,24, 45,62, 39,96, 67,57, 53,77, 53,113, 88,68, 67,91, 77,122, 112,93, 116,154
+
+------------------------------------------------------------------------------------------------------------------
+Notes
+------------------------------------------------------------------------------------------------------------------
+change line width --> image.c:265
+change text size --> image.c:295
+mod to include the probability in the label --> image.c:249-254
+regex to select all the lines without the loss in the output file: ^(.(?!(.*avg loss,.*)))*$    ^(.(?!avg loss,|, or ))*$
+mod to write the loss to a file --> detector.c:257-265
+mod to change the weight saving frequency --> detector.c:140
+mod to change the max_boxes to 1000 --> parser.c:359
+set nb of (physical?) cores to use --> detector.c:143 (now 157)
+
+
+comments about the training time:
+the cpu seems to be a bottle neck:
+    setting random to 0 does not make a significant difference 
+    moving the images to the ssd does not seem to change anything (maybe it does for tiny-yolo)
+    the tensor cores do not seem to change anything
+    maxing out the number of cores running does help a little
