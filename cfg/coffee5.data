@@ -1,0 +1,5 @@
+classes = 1
+train = data/coffee-train-SSD.txt
+valid = data/coffee-test-SSD.txt
+names = data/coffee5.names  
+backup = backup/coffee5
